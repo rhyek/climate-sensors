@@ -11,29 +11,24 @@ app.get('/', (req, res) => {
 });
 
 app.post('/readings', async (req, res, next) => {
-  console.log(req.body);
   try {
-    const [sensors] = await Promise.all([
-      db.all('select * from sensors').then(ss => {
-        console.log(ss);
-        return ss;
-      })
-    ]);
-    console.log(sensors);
     const sensor = await db
       .get('select * from sensors where serialNo = ?', [req.body.serialNo]);
-    console.log(sensor);
-    await db.run(
-      'insert into reading (sensor_id, temperature, humidity) values (?, ?, ?)',
-      [sensor.id, req.temp, req.hum]);
-    res.end();
+    const lastID = await db
+      .run(
+        'insert into readings (sensor_id, temperature, humidity) values (?, ?, ?)',
+        [sensor.id, req.body.temp, req.body.hum])
+      .then(s => s.lastID);
+    res
+      .status(201)
+      .json({ id: lastID });
   } catch (error) {
     next(error);
   }
 });
 
 Promise.resolve()
-  .then(() => db.open('./db.sqlite', { Promise }))
+  .then(() => db.open('./db.sqlite', { verbose: true, Promise }))
   .then(() => db.migrate())
   .catch(error => console.error(error.stack))
   .finally(() => app.listen(3000));

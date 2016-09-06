@@ -4,10 +4,6 @@ var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
 
-var _slicedToArray2 = require('babel-runtime/helpers/slicedToArray');
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
 var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
@@ -39,53 +35,41 @@ app.get('/', function (req, res) {
 
 app.post('/readings', function () {
   var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(req, res, next) {
-    var _ref2, _ref3, sensors, sensor;
-
+    var sensor, lastID;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
-            console.log(req.body);
-            _context.prev = 1;
-            _context.next = 4;
-            return _bluebird2.default.all([_sqlite2.default.all('select * from sensors').then(function (ss) {
-              console.log(ss);
-              return ss;
-            })]);
-
-          case 4:
-            _ref2 = _context.sent;
-            _ref3 = (0, _slicedToArray3.default)(_ref2, 1);
-            sensors = _ref3[0];
-
-            console.log(sensors);
-            _context.next = 10;
+            _context.prev = 0;
+            _context.next = 3;
             return _sqlite2.default.get('select * from sensors where serialNo = ?', [req.body.serialNo]);
 
-          case 10:
+          case 3:
             sensor = _context.sent;
+            _context.next = 6;
+            return _sqlite2.default.run('insert into readings (sensor_id, temperature, humidity) values (?, ?, ?)', [sensor.id, req.body.temp, req.body.hum]).then(function (s) {
+              return s.lastID;
+            });
 
-            console.log(sensor);
-            _context.next = 14;
-            return _sqlite2.default.run('insert into reading (sensor_id, temperature, humidity) values (?, ?, ?)', [sensor.id, req.temp, req.hum]);
+          case 6:
+            lastID = _context.sent;
 
-          case 14:
-            res.end();
-            _context.next = 20;
+            res.status(201).json({ id: lastID });
+            _context.next = 13;
             break;
 
-          case 17:
-            _context.prev = 17;
-            _context.t0 = _context['catch'](1);
+          case 10:
+            _context.prev = 10;
+            _context.t0 = _context['catch'](0);
 
             next(_context.t0);
 
-          case 20:
+          case 13:
           case 'end':
             return _context.stop();
         }
       }
-    }, _callee, undefined, [[1, 17]]);
+    }, _callee, undefined, [[0, 10]]);
   }));
 
   return function (_x, _x2, _x3) {
@@ -94,7 +78,7 @@ app.post('/readings', function () {
 }());
 
 _bluebird2.default.resolve().then(function () {
-  return _sqlite2.default.open('./db.sqlite', { Promise: _bluebird2.default });
+  return _sqlite2.default.open('./db.sqlite', { verbose: true, Promise: _bluebird2.default });
 }).then(function () {
   return _sqlite2.default.migrate();
 }).catch(function (error) {
